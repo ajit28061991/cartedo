@@ -23,12 +23,15 @@ function reducer(state, action) {
         : [...state.enrolled, action.payload];
       localStorage.setItem("enrolled", JSON.stringify(newEnrolled));
       return { ...state, enrolled: newEnrolled };
+    case "SET_ENROLLED":
+      return { ...state, enrolled: action.payload };
     case "ADD_COURSE":
       return { ...state, courses: [action.payload, ...state.courses] };
     default:
       return state;
   }
 }
+
 
 export const CourseContext = createContext();
 
@@ -45,11 +48,17 @@ export function CourseProvider({ children }) {
         dispatch({ type: "FETCH_ERROR", payload: error.message });
       }
     };
-
-    const savedEnrolled = JSON.parse(localStorage.getItem("enrolled") || []);
-    dispatch({ type: "TOGGLE_ENROLLMENT", payload: savedEnrolled });
+  
+    // Safe localStorage access inside browser-only useEffect
+    if (typeof window !== "undefined") {
+      const enrolledRaw = localStorage.getItem("enrolled");
+      const savedEnrolled = enrolledRaw ? JSON.parse(enrolledRaw) : [];
+      dispatch({ type: "SET_ENROLLED", payload: savedEnrolled });
+    }
+  
     fetchCourses();
   }, []);
+  
 
   return (
     <CourseContext.Provider value={{ state, dispatch }}>
